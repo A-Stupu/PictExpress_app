@@ -1,0 +1,143 @@
+@startuml Domain_Model
+title Pictograme App — Domain Model
+
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam linetype ortho
+
+' ─────────── USERS ───────────
+
+class User {
+  id : String
+  username : String
+  email : String
+  role : UserRole
+}
+
+enum UserRole {
+  TEACHER
+  SUPPORT_TEACHER
+  STUDENT
+  ADMIN
+}
+
+class Teacher {
+}
+
+class SupportTeacher {
+}
+
+class Student {
+}
+
+class Administrator {
+}
+
+User <|-- Teacher
+User <|-- SupportTeacher
+User <|-- Student
+User <|-- Administrator
+
+' ─────────── CORE FLOW ───────────
+
+class SpeechConversion {
+  id : String
+  date : DateTime
+  rawAudioRef : String
+  transcribedText : String
+  language : String
+}
+
+class SequenceEntry {
+  order : Integer
+  wordOrPhrase : String
+}
+
+class SavedSequence {
+  id : String
+  title : String
+  savedDate : DateTime
+}
+
+' ─────────── PICTOGRAM ───────────
+
+class Pictogram {
+  id : String
+  label : String
+  imageURL : String
+  tags : String[]
+  language : String
+  source : PictogramSource
+}
+
+enum PictogramSource {
+  ARASAAC
+  CUSTOM
+  IMPORTED
+}
+
+class CustomPictogram {
+  uploadedImagePath : String
+}
+
+class PictogramCategory {
+  id : String
+  name : String
+}
+
+class PictogramLibrary {
+  name : String
+  version : String
+  lastSyncDate : Date
+}
+
+Pictogram <|-- CustomPictogram
+
+' ─────────── RELATIONSHIPS ───────────
+
+' Who triggers a conversion
+User "1" -- "0..*" SpeechConversion : initiates >
+
+' A conversion produces an ordered sequence of entries
+SpeechConversion "1" *-- "1..*" SequenceEntry : produces >
+
+' Each entry maps to one pictogram
+SequenceEntry "0..*" --> "1" Pictogram : resolved to >
+
+' A conversion can optionally be saved
+SpeechConversion "1" -- "0..1" SavedSequence : saved as >
+
+' Teacher/ST can share a saved sequence with a student
+SavedSequence "0..*" --> "0..*" Student : shared with >
+
+' Pictogram organisation
+Pictogram "0..*" --> "1" PictogramCategory : belongs to >
+PictogramLibrary "1" *-- "0..*" Pictogram : contains >
+
+' Custom pictograms are created by teachers/support teachers
+SupportTeacher "1" -- "0..*" CustomPictogram : creates >
+Teacher "1" -- "0..*" CustomPictogram : creates >
+
+' Admin manages the library
+Administrator "1" -- "1" PictogramLibrary : manages >
+
+note right of SpeechConversion
+  Represents one voice-to-pictogram
+  conversion event.
+  transcribedText is the raw STT output
+  before pictogram matching.
+end note
+
+note bottom of SequenceEntry
+  One entry per word/concept extracted
+  from the transcribed text.
+  order defines the display sequence.
+end note
+
+note right of SavedSequence
+  Optional: a named snapshot of a
+  SpeechConversion result that can
+  be retrieved and shared later.
+end note
+
+@enduml

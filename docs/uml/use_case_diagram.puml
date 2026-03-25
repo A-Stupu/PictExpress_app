@@ -1,0 +1,86 @@
+@startuml Use_Case_Diagram_School_Context
+title Pictograme App — Use Case Diagram (School Context)
+
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+' ─────────── ACTORS ───────────
+actor "Teacher"                  as T
+actor "Support Teacher"          as ST
+actor "Student"                  as S
+actor "System Admin"             as SA
+actor "Speech-to-Text\nService"  as STT     <<external system>>
+actor "Pictogram DB\n(ARASAAC)"  as ARASAAC <<external system>>
+
+' Support Teacher inherits all Teacher use cases
+ST --|> T
+
+' ─────────── SYSTEM BOUNDARY ───────────
+rectangle "Pictograme App — School Context" {
+
+  ' ── Core flow (shared by all users) ──
+  package "Core: Speech to Pictogram" {
+    usecase "Convert Speech\nto Pictogram(s)"  as UC_CONVERT
+    usecase "Record Voice Input"               as UC_RECORD
+    usecase "Transcribe Speech to Text"        as UC_TRANSCRIBE
+    usecase "Match Text to Pictogram(s)"       as UC_MATCH
+    usecase "Display Pictogram Sequence"       as UC_DISPLAY
+    usecase "Edit Generated Sequence"          as UC_EDIT_SEQ
+  }
+
+  ' ── Actions on a generated result ──
+  package "Saved Sequences" {
+    usecase "Save Sequence"                    as UC_SAVE
+    usecase "View Saved Sequence"              as UC_VIEW
+    usecase "Share Sequence with Student"      as UC_SHARE
+    usecase "Export / Print Sequence"          as UC_EXPORT
+  }
+
+  ' ── Support Teacher only ──
+  package "Customisation" {
+    usecase "Add Custom Pictogram"             as UC_CUSTOM
+  }
+
+  ' ── Administration ──
+  package "Administration" {
+    usecase "Manage User Accounts"             as UC_USERS
+    usecase "Manage Pictogram Library"         as UC_LIB
+  }
+
+}
+
+' ─────────── ACTOR → USE CASE ───────────
+
+' Teacher (ST inherits all of these)
+T --> UC_CONVERT
+T --> UC_SAVE
+T --> UC_VIEW
+T --> UC_SHARE
+T --> UC_EXPORT
+
+' Support Teacher — extra only
+ST --> UC_CUSTOM
+
+' Student
+S --> UC_CONVERT
+S --> UC_VIEW
+
+' System Admin
+SA --> UC_USERS
+SA --> UC_LIB
+
+' External systems
+UC_TRANSCRIBE ..> STT     : <<uses>>
+UC_MATCH       ..> ARASAAC : <<uses>>
+
+' ─────────── INCLUDE / EXTEND ───────────
+UC_CONVERT  ..> UC_RECORD      : <<include>>
+UC_CONVERT  ..> UC_TRANSCRIBE  : <<include>>
+UC_CONVERT  ..> UC_MATCH       : <<include>>
+UC_CONVERT  ..> UC_DISPLAY     : <<include>>
+
+UC_EDIT_SEQ ..> UC_CONVERT     : <<extend>>
+UC_SAVE     ..> UC_CONVERT     : <<extend>>
+
+@enduml
