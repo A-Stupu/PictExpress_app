@@ -93,6 +93,20 @@ class PictogramLibrary {
 
 Pictogram <|-- CustomPictogram
 
+' ─────────── STUDENT COMMUNICATION BOARD ───────────
+
+class NeedPictogram {
+  isDefault : Boolean
+}
+
+class NeedSignal {
+  id : String
+  sentAt : DateTime
+  isAcknowledged : Boolean
+}
+
+Pictogram <|-- NeedPictogram
+
 ' ─────────── RELATIONSHIPS ───────────
 
 ' Who triggers a conversion
@@ -121,6 +135,12 @@ Teacher "1" -- "0..*" CustomPictogram : creates >
 ' Admin manages the library
 Administrator "1" -- "1" PictogramLibrary : manages >
 
+' Communication board
+Student "1" -- "0..*" NeedSignal : sends >
+NeedSignal "0..*" --> "1" NeedPictogram : refers to >
+Teacher "1" -- "0..*" NeedSignal : acknowledges >
+SupportTeacher "1" -- "0..*" NeedPictogram : configures >
+
 note right of SpeechConversion
   Represents one voice-to-pictogram
   conversion event.
@@ -138,6 +158,22 @@ note right of SavedSequence
   Optional: a named snapshot of a
   SpeechConversion result that can
   be retrieved and shared later.
+end note
+
+note right of NeedSignal
+  Created when a Student taps a
+  NeedPictogram on the board.
+  isAcknowledged turns true when
+  the Teacher views/dismisses it.
+end note
+
+note bottom of NeedPictogram
+  Predefined subset of Pictogram
+  used only in the communication
+  board (e.g. "I need a break").
+  isDefault = true means it ships
+  with the app; false = added by
+  a SupportTeacher.
 end note
 
 @enduml

@@ -37,9 +37,17 @@ rectangle "Pictograme App — School Context" {
     usecase "Export / Print Sequence"          as UC_EXPORT
   }
 
+  ' ── Student Communication Board ──
+  package "Student Communication Board" {
+    usecase "Browse Need Pictograms"           as UC_BROWSE_NEEDS
+    usecase "Signal a Need"                    as UC_SIGNAL
+    usecase "View Student Signals"             as UC_VIEW_SIGNALS
+  }
+
   ' ── Support Teacher only ──
   package "Customisation" {
     usecase "Add Custom Pictogram"             as UC_CUSTOM
+    usecase "Add / Edit Need Pictograms"       as UC_EDIT_NEEDS
   }
 
   ' ── Administration ──
@@ -61,10 +69,15 @@ T --> UC_EXPORT
 
 ' Support Teacher — extra only
 ST --> UC_CUSTOM
+ST --> UC_EDIT_NEEDS
 
 ' Student
 S --> UC_CONVERT
 S --> UC_VIEW
+S --> UC_SIGNAL
+
+' Teacher — view signals sent by student
+T --> UC_VIEW_SIGNALS
 
 ' System Admin
 SA --> UC_USERS
@@ -82,5 +95,7 @@ UC_CONVERT  ..> UC_DISPLAY     : <<include>>
 
 UC_EDIT_SEQ ..> UC_CONVERT     : <<extend>>
 UC_SAVE     ..> UC_CONVERT     : <<extend>>
+
+UC_SIGNAL   ..> UC_BROWSE_NEEDS : <<include>>
 
 @enduml
