@@ -1,0 +1,19 @@
+# Environnement virtuel
+venv/
+.env
+environnement_scolaire/
+
+# Modèles IA lourds
+models/
+.whisper_models/
+
+# Fichiers Flutter
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Divers
+__pycache__/
+*.wav
+.DS_Store
