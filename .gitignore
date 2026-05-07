@@ -17,3 +17,20 @@ build/
 __pycache__/
 *.wav
 .DS_Store
+
+# Python
+environnement_scolaire/
+__pycache__/
+*.pyc
+mapping_mots.json
+pictogrammes/
+
+# Flutter (dans le sous-dossier)
+pictexpress_app/.dart_tool/
+pictexpress_app/.flutter-plugins
+pictexpress_app/.flutter-plugins-dependencies
+pictexpress_app/build/
+
+# OS
+.DS_Store
+Thumbs.db

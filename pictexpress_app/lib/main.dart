@@ -2,24 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'loading_screen.dart';
 
 void main() {
-  runApp(const PictExpressApp());
+  runApp(PictExpressApp());
 }
 
 class PictExpressApp extends StatelessWidget {
-  const PictExpressApp({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PictExpress',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF0F4F8),
-        primarySwatch: Colors.blueGrey,
-      ),
-      home: const MainScreen(),
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: LoadingScreen(),
     );
   }
 }
@@ -36,12 +32,10 @@ class _MainScreenState extends State<MainScreen> {
   List<String> _pictogrammes = [];
   String _texteCompris = "";
 
-  // Outil d'enregistrement natif
   final AudioRecorder _audioRecorder = AudioRecorder();
 
   Future<void> _toggleRecording() async {
     if (_isRecording) {
-      // 1. ARRÊT DE L'ENREGISTREMENT
       final path = await _audioRecorder.stop();
       setState(() {
         _isRecording = false;
@@ -51,7 +45,6 @@ class _MainScreenState extends State<MainScreen> {
         await _envoyerAudioAuServeur(path);
       }
     } else {
-      // 2. DÉMARRAGE DE L'ENREGISTREMENT
       if (await _audioRecorder.hasPermission()) {
         await _audioRecorder.start(
           const RecordConfig(encoder: AudioEncoder.pcm16bits),
@@ -66,9 +59,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  // Fonction magique qui envoie l'audio à Python
   Future<void> _envoyerAudioAuServeur(String audioPath) async {
-    // L'adresse locale de votre ordinateur
     var uri = Uri.parse('http://127.0.0.1:8000/api/transcrire');
 
     var request = http.MultipartRequest('POST', uri);
@@ -81,7 +72,6 @@ class _MainScreenState extends State<MainScreen> {
         var json = jsonDecode(responseData);
 
         setState(() {
-          // On récupère la liste des pictos renvoyée par Python
           _pictogrammes = List<String>.from(json['pictogrammes']);
           _texteCompris = json['texte_compris'];
         });
@@ -122,7 +112,6 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Affichage du texte compris par Whisper
             if (_texteCompris.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -135,7 +124,6 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
 
-            // Affichage des Pictogrammes
             Container(
               height: 200,
               alignment: Alignment.center,
@@ -158,13 +146,10 @@ class _MainScreenState extends State<MainScreen> {
                                 horizontal: 10.0,
                               ),
                               child: Image.network(
-                                // On va chercher l'image sur notre serveur Python !
                                 'http://127.0.0.1:8000/pictogrammes/$nomFichier',
-                                width:
-                                    120, // Taille de l'image (plus lisible pour l'enfant)
+                                width: 120,
                                 height: 120,
                                 fit: BoxFit.contain,
-                                // Petite sécurité : si l'image manque, on affiche une icône d'erreur grise
                                 errorBuilder: (context, error, stackTrace) =>
                                     const Icon(
                                       Icons.broken_image,
