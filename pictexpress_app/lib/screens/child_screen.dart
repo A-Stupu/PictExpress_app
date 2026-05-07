@@ -1,69 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
-import '../main.dart' show serverUrl;
+// DESIGN: The child communication board loads images directly from ARASAAC CDN —
+// no backend server required. The Needs structure is static (changes only when
+// the ontology is updated) so hardcoding it in Dart avoids a network round-trip
+// and allows the child flow to work offline from the server.
+//
+// arasaacId values match the #arasaacId annotations in maths.owl.
+// If you add a new Need to the ontology, update _kNeeds here as well.
 
-class ChildScreen extends StatefulWidget {
+// ---- Static Needs data (from maths.owl annotations) -----------------------
+
+typedef NeedItem = ({String label, int arasaacId});
+
+const List<NeedItem> _kPhysical = [
+  (label: "J'ai faim",  arasaacId: 35559),
+  (label: "J'ai soif",  arasaacId: 7273),
+  (label: "Toilettes",  arasaacId: 5921),
+  (label: "J'ai mal",   arasaacId: 30620),
+  (label: "Pause",      arasaacId: 27339),
+];
+
+const List<NeedItem> _kMental = [
+  (label: "Fatigué",       arasaacId: 35537),
+  (label: "Trop de bruit", arasaacId: 7157),
+];
+
+const List<NeedItem> _kHelpValidation = [
+  (label: "J'ai compris",        arasaacId: 11697),
+  (label: "Je ne comprends pas", arasaacId: 37827),
+  (label: "J'ai fini",           arasaacId: 5358),
+  (label: "C'est bien ?",        arasaacId: 5397),
+];
+
+// ARASAAC public CDN — no server needed for images
+String _pictoUrl(int arasaacId) =>
+    'https://static.arasaac.org/pictograms/$arasaacId/${arasaacId}_500.png';
+
+// ---- Screen ----------------------------------------------------------------
+
+class ChildScreen extends StatelessWidget {
   const ChildScreen({Key? key}) : super(key: key);
 
-  @override
-  State<ChildScreen> createState() => _ChildScreenState();
-}
-
-class _ChildScreenState extends State<ChildScreen> {
-  bool _loading = true;
-  String? _error;
-
-  // Groups returned by GET /needs
-  List<Map<String, dynamic>> _physical = [];
-  List<Map<String, dynamic>> _mental = [];
-  List<Map<String, dynamic>> _helpValidation = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadNeeds();
-  }
-
-  Future<void> _loadNeeds() async {
-    try {
-      final resp = await http
-          .get(Uri.parse('$serverUrl/needs'))
-          .timeout(const Duration(seconds: 10));
-
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body) as Map<String, dynamic>;
-        setState(() {
-          _physical       = _parseGroup(data['physical']);
-          _mental         = _parseGroup(data['mental']);
-          _helpValidation = _parseGroup(data['help_validation']);
-          _loading = false;
-        });
-      } else {
-        setState(() { _error = 'Erreur ${resp.statusCode}'; _loading = false; });
-      }
-    } catch (e) {
-      setState(() { _error = 'Impossible de charger les pictogrammes'; _loading = false; });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible de charger les pictogrammes')),
-        );
-      }
-    }
-  }
-
-  List<Map<String, dynamic>> _parseGroup(dynamic raw) {
-    if (raw == null) return [];
-    return List<Map<String, dynamic>>.from(
-        (raw as List).map((e) => Map<String, dynamic>.from(e)));
-  }
-
-  void _showPictogramDialog(Map<String, dynamic> item) {
-    final aid = item['arasaac_id'];
-    final label = item['label_fr'] ?? item['class_name'];
-    final url = '$serverUrl/pictogrammes/$aid.png';
-
+  void _showPictogramDialog(BuildContext context, NeedItem item) {
     showDialog(
       context: context,
       builder: (_) => Dialog(
@@ -74,7 +52,7 @@ class _ChildScreenState extends State<ChildScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Image.network(
-                url,
+                _pictoUrl(item.arasaacId),
                 width: 220,
                 height: 220,
                 fit: BoxFit.contain,
@@ -83,7 +61,7 @@ class _ChildScreenState extends State<ChildScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                label,
+                item.label,
                 style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
@@ -105,13 +83,9 @@ class _ChildScreenState extends State<ChildScreen> {
     );
   }
 
-  Widget _buildPictoCard(Map<String, dynamic> item) {
-    final aid = item['arasaac_id'];
-    final label = item['label_fr'] ?? item['class_name'];
-    final url = '$serverUrl/pictogrammes/$aid.png';
-
+  Widget _buildCard(BuildContext context, NeedItem item) {
     return GestureDetector(
-      onTap: () => _showPictogramDialog(item),
+      onTap: () => _showPictogramDialog(context, item),
       child: Card(
         elevation: 3,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -122,17 +96,18 @@ class _ChildScreenState extends State<ChildScreen> {
             children: [
               Expanded(
                 child: Image.network(
-                  url,
+                  _pictoUrl(item.arasaacId),
                   fit: BoxFit.contain,
-                  loadingBuilder: (_, child, progress) =>
-                      progress == null ? child : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  loadingBuilder: (_, child, progress) => progress == null
+                      ? child
+                      : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                   errorBuilder: (_, __, ___) =>
                       const Icon(Icons.broken_image, size: 50, color: Colors.grey),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                label,
+                item.label,
                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -145,8 +120,12 @@ class _ChildScreenState extends State<ChildScreen> {
     );
   }
 
-  Widget _buildSection(String title, Color color, List<Map<String, dynamic>> items) {
-    if (items.isEmpty) return const SizedBox.shrink();
+  Widget _buildSection(
+    BuildContext context,
+    String title,
+    Color color,
+    List<NeedItem> items,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -180,7 +159,7 @@ class _ChildScreenState extends State<ChildScreen> {
             mainAxisSpacing: 8,
           ),
           itemCount: items.length,
-          itemBuilder: (_, i) => _buildPictoCard(items[i]),
+          itemBuilder: (ctx, i) => _buildCard(ctx, items[i]),
         ),
       ],
     );
@@ -195,22 +174,17 @@ class _ChildScreenState extends State<ChildScreen> {
         foregroundColor: Colors.black87,
         elevation: 1,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null && _physical.isEmpty && _mental.isEmpty && _helpValidation.isEmpty
-              ? Center(
-                  child: Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 16)))
-              : SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSection("J'ai besoin de...", Colors.orange, _physical),
-                      _buildSection("Je me sens...", Colors.purple, _mental),
-                      _buildSection("Pour le travail", Colors.teal, _helpValidation),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSection(context, "J'ai besoin de...", Colors.orange, _kPhysical),
+            _buildSection(context, "Je me sens...", Colors.purple, _kMental),
+            _buildSection(context, "Pour le travail", Colors.teal, _kHelpValidation),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
     );
   }
 }
