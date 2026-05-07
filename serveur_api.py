@@ -87,3 +87,13 @@ async def transcrire_audio(file: UploadFile = File(...)):
 
     finally:
         os.remove(tmp_path)
+
+
+@app.get("/needs")
+async def get_needs():
+    """
+    Return Needs grouped by UI category for the child communication board.
+    Response: {physical: [...], mental: [...], help_validation: [...]}
+    Each item: {class_name, label_fr, arasaac_id}
+    """
+    return app.state.ontology.get_needs_grouped()

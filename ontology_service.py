@@ -93,6 +93,9 @@ class OntologyService:
         self._build_label_index()
         self._load_arasaac_ids()
 
+        # 6b. Download any missing pictogram PNGs (non-blocking — failures are logged)
+        self.ensure_pictograms_cached()
+
         # 7. Validate with initial Pellet pass (catches ontology inconsistencies early)
         owlready2.sync_reasoner_pellet(
             [self.onto],
@@ -294,6 +297,85 @@ class OntologyService:
                 return f"{prop_name}(?{v1}, ?{v2})"
 
         return None
+
+    # ---- Child-flow API -------------------------------------------------------
+
+    def get_needs_grouped(self) -> dict:
+        """
+        Return Needs organized for the ChildScreen communication board.
+
+        Groups (UI-driven, not strict ontological branches):
+          physical      — bodily needs (PhysicalNeed subtypes + NeedBreak)
+          mental        — emotional/sensory (MentalNeed subtypes minus NeedBreak)
+          help_validation — school interaction (HelpNeed + ValidationNeed subtypes)
+
+        Only classes with both label@fr and arasaacId are included.
+        """
+        # DESIGN: NeedBreak is MentalNeed ontologically, but maps to
+        # "J'ai besoin de..." UI section alongside physical needs.
+        PHYSICAL_EXTRA = {"NeedBreak"}
+        MENTAL_EXCLUDE = {"NeedBreak"}
+
+        groups: dict[str, list[dict]] = {"physical": [], "mental": [], "help_validation": []}
+
+        PhysicalNeed   = self.onto.search_one(iri="*#PhysicalNeed")
+        MentalNeed     = self.onto.search_one(iri="*#MentalNeed")
+        HelpNeed       = self.onto.search_one(iri="*#HelpNeed")
+        ValidationNeed = self.onto.search_one(iri="*#ValidationNeed")
+
+        for cls in self.onto.classes():
+            aid = self.get_arasaac_id(cls)
+            if aid is None:
+                continue
+            label = self._get_primary_fr_label(cls)
+            if label is None or label == cls.name:
+                continue  # no real FR label
+
+            entry = self._make_entry(cls, aid)
+
+            if PhysicalNeed and issubclass(cls, PhysicalNeed):
+                groups["physical"].append(entry)
+            elif cls.name in PHYSICAL_EXTRA:
+                groups["physical"].append(entry)
+            elif MentalNeed and issubclass(cls, MentalNeed) and cls.name not in MENTAL_EXCLUDE:
+                groups["mental"].append(entry)
+            elif (HelpNeed and issubclass(cls, HelpNeed)) or \
+                 (ValidationNeed and issubclass(cls, ValidationNeed)):
+                groups["help_validation"].append(entry)
+
+        return groups
+
+    def ensure_pictograms_cached(self, pictogrammes_dir: str = "pictogrammes") -> int:
+        """
+        Download missing pictogram PNGs from ARASAAC static CDN.
+        Returns the number of files downloaded.
+        Logs failures but does not raise — missing PNGs show as broken_image in Flutter.
+        """
+        import httpx
+
+        os.makedirs(pictogrammes_dir, exist_ok=True)
+        downloaded = 0
+
+        for cls_name, aid in self._arasaac_ids.items():
+            dest = os.path.join(pictogrammes_dir, f"{aid}.png")
+            if os.path.exists(dest):
+                continue
+
+            url = f"https://static.arasaac.org/pictograms/{aid}/{aid}_500.png"
+            try:
+                resp = httpx.get(url, timeout=5, follow_redirects=True)
+                if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("image/"):
+                    with open(dest, "wb") as f:
+                        f.write(resp.content)
+                    downloaded += 1
+                else:
+                    print(f"[picto] {cls_name} (id={aid}): HTTP {resp.status_code} from {url}")
+            except Exception as exc:
+                print(f"[picto] {cls_name} (id={aid}): download failed — {exc}")
+
+        if downloaded:
+            print(f"[picto] Downloaded {downloaded} new pictograms.")
+        return downloaded
 
     def __del__(self) -> None:
         if self._tmp_dir and os.path.isdir(self._tmp_dir):
