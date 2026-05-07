@@ -7,6 +7,100 @@ A research application that automatically translates French sentences into picto
 
 ---
 
+## Current Status (branch: feature/owl-integration)
+
+The prototype backend is **functionally connected end-to-end** for the minimum use case:
+> "Tracez un cercle" → [circle pictogram, compass pictogram, pencil pictogram]
+
+| Component | Status |
+|-----------|--------|
+| `maths.owl` OWL ontology | Structurally fixed + 23 French labels + 23 arasaacId + 11 SWRL rules |
+| Pellet reasoner (Java 21) | Working — SWRL rules fire correctly |
+| `ontology_service.py` | OntologyService: label lookup + SWRL inference via Pellet |
+| `serveur_api.py` | FastAPI backend: Whisper (async) + spaCy + OntologyService |
+| Flutter app | Microphone permissions added (Android + iOS), URL parametrized |
+| Tests | 17/17 pytest passing |
+
+**What works:** Whisper transcribes French speech → spaCy lemmatizes → OntologyService maps lemmas to OWL classes → Pellet infers required tools via SWRL → pictograms returned by arasaacId.
+
+**What is not yet implemented:** live ARASAAC CDN download (pictogram PNG files must be pre-loaded locally); ARASAAC API client; NLP disambiguation for polysemy; Flutter state management; full test coverage for the Flutter UI.
+
+---
+
+## Setup
+
+### Prerequisites
+
+- Python 3.10+
+- **Java 21 LTS** (e.g., [Eclipse Temurin](https://adoptium.net/temurin/releases/?version=21)) — required for Pellet
+- Flutter SDK (for the mobile app)
+
+### Backend
+
+```bash
+# 1. Install Python dependencies
+pip install -r requirements.txt
+
+# 2. Download the French spaCy model
+python -m spacy download fr_core_news_md
+
+# 3. Patch owlready2 JARs for Java 21 compatibility (run once per machine)
+python scripts/patch_owlready2_jars.py
+
+# 4. Verify Pellet works
+python scripts/test_pellet.py
+
+# 5. Start the FastAPI server (default: port 8000)
+uvicorn serveur_api:app --reload
+```
+
+### Running tests
+
+```bash
+pytest tests/ -v
+```
+
+### Mobile app (Flutter)
+
+```bash
+cd pictexpress_app
+
+# Dev (localhost): default SERVER_URL = http://127.0.0.1:8000
+flutter run
+
+# Physical device (LAN): set SERVER_URL to your machine's IP
+flutter run --dart-define=SERVER_URL=http://192.168.1.X:8000
+```
+
+---
+
+## Architecture
+
+```
+[Flutter UI]
+     │  HTTP multipart/form-data (WAV file)
+     ▼
+[FastAPI Controller — serveur_api.py]
+     │  await asyncio.to_thread(whisper.transcribe)
+     ├─ [WhisperService — openai-whisper]    FR speech → text
+     │  spaCy lemmatization
+     ├─ [NLP — fr_core_news_md]              text → lemmas
+     │  OntologyService.infer_pictograms()
+     └─ [OntologyService — ontology_service.py]
+            │  load: OWL/XML parse + Pellet JVM startup
+            │  infer: temporary OWL individuals → sync_reasoner_pellet
+            ├─ [maths.owl]                   52 classes, 11 SWRL rules, 23 arasaacIds
+            └─ [Pellet via owlready2]        SWRL DL-Safe rule execution
+                     │
+                     ▼
+           arasaac_id list → {class_name, label_fr, arasaac_id}
+                     │
+                     ▼
+     [pictogrammes/ static files]            {arasaac_id}.png served by FastAPI
+```
+
+---
+
 ## Project Scope
 
 The application operates within a **restricted domain**: elementary school daily routine with ~50–80 core concepts:

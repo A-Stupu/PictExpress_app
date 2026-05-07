@@ -1,0 +1,47 @@
+@startuml sequence_teacher_flow
+title Flow 1 — Teacher speaks an instruction\nSystem returns relevant pictograms
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor       "Teacher"        as T
+participant "Mobile App"     as App
+participant "Backend"        as API
+participant "Speech-to-Text" as STT
+participant "NLP"            as NLP
+participant "Ontology\nService" as OWL
+participant "Reasoner"       as Pellet
+
+T -> App : taps microphone
+App -> App : start recording
+
+T -> App : taps to stop
+App -> API : send audio file
+
+API -> STT : transcribe (French)
+STT --> API : transcribed sentence
+
+API -> NLP : lemmatise sentence
+NLP --> API : list of relevant lemmas
+
+API -> OWL : infer pictograms from lemmas
+activate OWL
+
+OWL -> OWL : map lemmas to OWL classes\n(action + concept)
+OWL -> OWL : create temporary individuals\nand link them
+
+OWL -> Pellet : run SWRL reasoning
+activate Pellet
+Pellet --> OWL : inferred tool requirements
+deactivate Pellet
+
+OWL -> OWL : collect results\nclean up temporary individuals
+OWL --> API : pictogram list\n(concept + inferred tools)
+deactivate OWL
+
+API --> App : pictogram identifiers
+
+App -> App : load and display pictogram images
+App --> T : pictograms shown on screen
+
+@enduml

@@ -1,0 +1,187 @@
+@startuml class_diagram
+title Pict'Express — Class Diagram (Elaboration Phase)
+
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam class {
+  BackgroundColor LightYellow
+  BorderColor DarkGray
+}
+
+' ═══════════════════════════════════════════════════════════
+package "presentation (Flutter)" #LightBlue {
+
+  class HomeScreen {
+    +build(context): Widget
+  }
+  note right of HomeScreen : Stateless. Renders two\n_RoleButton widgets and\nnavigates to Teacher/Child.
+
+  class _RoleButton {
+    -label: String
+    -icon: IconData
+    -color: Color
+    -onTap: VoidCallback
+    +build(context): Widget
+  }
+
+  class TeacherScreen {
+    -_isRecording: bool
+    -_pictogrammes: List<String>
+    -_texteCompris: String
+    -_audioRecorder: AudioRecorder
+    +_toggleRecording(): Future<void>
+    -_envoyerAudioAuServeur(audioPath): Future<void>
+    +build(context): Widget
+  }
+
+  class ChildScreen {
+    +build(context): Widget
+    -_showPictogramDialog(context, item): void
+    -_buildCard(context, item): Widget
+    -_buildSection(context, title, color, items): Widget
+  }
+  note right of ChildScreen
+    Stateless — no HTTP call.
+    Data: _kPhysical, _kMental,
+    _kHelpValidation (constants).
+    Images from ARASAAC CDN.
+  end note
+
+  class NeedItem <<record>> {
+    +label: String
+    +arasaacId: int
+  }
+
+  HomeScreen --> TeacherScreen : "Navigator.push"
+  HomeScreen --> ChildScreen   : "Navigator.push"
+  HomeScreen *-- _RoleButton
+  ChildScreen ..> NeedItem     : "uses (const lists)"
+}
+
+' ═══════════════════════════════════════════════════════════
+package "application (FastAPI)" #LightGreen {
+
+  class FastAPIApp {
+    +state.whisper: WhisperModel
+    +state.nlp: Language
+    +state.ontology: OntologyService
+    --
+    +lifespan(): AsyncContextManager
+    +transcrire_audio(file: UploadFile): dict
+    +get_needs(): dict
+    +/pictogrammes/*: StaticFiles
+  }
+}
+
+' ═══════════════════════════════════════════════════════════
+package "domain" #LightYellow {
+
+  class OntologyService {
+    -owl_path: Path
+    -world: World
+    -onto: Ontology
+    -_tmp_dir: str
+    -_fr_label_to_class: dict[str, ThingClass]
+    -_arasaac_ids: dict[str, int]
+    --
+    +load(): None
+    +find_class_by_label(label_fr): ThingClass?
+    +get_arasaac_id(cls): int?
+    +infer_pictograms(lemmas): list[Pictogram]
+    +get_needs_grouped(): NeedsGroup
+    +ensure_pictograms_cached(dir): int
+    -_parse_swrl_rules(): list[str]
+    -_atom_to_str(elem): str?
+    -_build_label_index(): None
+    -_load_arasaac_ids(): None
+    -_make_entry(cls, id): Pictogram
+    -_is_action(cls): bool
+    -_is_concept(cls): bool
+    -_get_primary_fr_label(cls): str?
+  }
+
+  class Pictogram <<struct>> {
+    +class_name: str
+    +label_fr: str
+    +arasaac_id: int
+  }
+
+  class NeedsGroup <<struct>> {
+    +physical: list[Pictogram]
+    +mental: list[Pictogram]
+    +help_validation: list[Pictogram]
+  }
+
+  OntologyService ..> Pictogram  : "creates"
+  OntologyService ..> NeedsGroup : "creates"
+}
+
+' ═══════════════════════════════════════════════════════════
+package "infrastructure" #LightGray {
+
+  class WhisperModel <<external>> {
+    +load_model(name): WhisperModel
+    +transcribe(path, language): dict
+  }
+
+  class SpacyLanguage <<external>> {
+    +load(model): Language
+    +__call__(text): Doc
+  }
+
+  class PelletReasoner <<external>> {
+    +sync_reasoner_pellet(ontologies,\n  infer_property_values): None
+  }
+
+  class HttpxClient <<external>> {
+    +get(url, timeout): Response
+  }
+
+  class OwlreadyWorld <<external>> {
+    +get_ontology(iri): Ontology
+    +Imp(): Imp
+    +destroy_entity(inst): None
+  }
+}
+
+' ═══════════════════════════════════════════════════════════
+package "domain_ontology (OWL — 62 classes)" #Wheat {
+
+  class Person <<OWL>> {
+    3 subclasses:\nStudent, Teacher, Assistant
+  }
+  class Actions <<OWL>> {
+    9 subclasses:\nMathAction (Draw, Calculate,\nCount, Measure)\nManualAction (Write, Erase, Cut)
+  }
+  class MathematicalConcept <<OWL>> {
+    14 subclasses:\nGeometricShape (Circle, Square,\nTriangle, Rectangle, Pentagon, Hexagon)\nMathOperation (Addition, Subtraction,\nMultiplication, Division)\nMagnitude, Number
+  }
+  class SchoolMaterial <<OWL>> {
+    10 subclasses:\nBasicTool (Pencil, Eraser, Notebook)\nGeometryTool (Compass, Ruler, SetSquare)\nCalculationTool (Calculator)
+  }
+  class Needs <<OWL>> {
+    11 subclasses across:\nPhysicalNeed (Hungry, Thirsty,\nNeedToilet, Hurt)\nMentalNeed (Tired, NeedBreak,\nTooMuchNoise)\nHelpNeed (DoNotUnderstand)\nValidationNeed (IFinish, IUnderstand,\nIsItGood)
+  }
+  class CalculationMethod <<OWL>> {
+    2 subclasses: Hands, Mind
+  }
+
+  note bottom of Actions
+    Object properties:
+    hasTarget: Actions → MathematicalConcept
+    requires: Actions → SchoolMaterial
+    (populated by 17 SWRL DLSafeRules)
+  end note
+}
+
+' ═══════════════════════════════════════════════════════════
+' Cross-package dependencies
+TeacherScreen --> FastAPIApp      : "POST /api/transcrire\n(http package)"
+FastAPIApp     --> OntologyService : "infer_pictograms()\nget_needs_grouped()"
+FastAPIApp     --> WhisperModel   : "asyncio.to_thread(\ntranscribe)"
+FastAPIApp     --> SpacyLanguage  : "nlp(text)"
+OntologyService --> PelletReasoner : "sync_reasoner_pellet()"
+OntologyService --> HttpxClient   : "CDN PNG download"
+OntologyService --> OwlreadyWorld : "load, Imp, destroy_entity"
+
+@enduml
