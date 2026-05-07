@@ -77,6 +77,9 @@
     <Declaration><Class IRI="#Number"/></Declaration>
     <!-- GeometricShape subtypes -->
     <Declaration><Class IRI="#Circle"/></Declaration>
+    <Declaration><Class IRI="#Hexagon"/></Declaration>
+    <Declaration><Class IRI="#Pentagon"/></Declaration>
+    <Declaration><Class IRI="#Rectangle"/></Declaration>
     <Declaration><Class IRI="#Square"/></Declaration>
     <Declaration><Class IRI="#Triangle"/></Declaration>
     <!-- Magnitude subtypes -->
@@ -85,11 +88,17 @@
     <Declaration><Class IRI="#Smaller"/></Declaration>
     <!-- MathOperation subtypes -->
     <Declaration><Class IRI="#Addition"/></Declaration>
+    <Declaration><Class IRI="#Division"/></Declaration>
+    <Declaration><Class IRI="#Multiplication"/></Declaration>
     <Declaration><Class IRI="#Subtraction"/></Declaration>
 
     <!-- Needs subtypes -->
     <Declaration><Class IRI="#HelpNeed"/></Declaration>
     <Declaration><Class IRI="#MentalNeed"/></Declaration>
+    <!-- DESIGN: PhysicalNeed covers bodily states (hunger, thirst, pain, toilet)
+         which are distinct from cognitive MentalNeed (tiredness, noise) and
+         social HelpNeed (understanding). Sibling of MentalNeed/HelpNeed/ValidationNeed. -->
+    <Declaration><Class IRI="#PhysicalNeed"/></Declaration>
     <Declaration><Class IRI="#ValidationNeed"/></Declaration>
     <!-- HelpNeed subtypes -->
     <Declaration><Class IRI="#DoNotUnderstand"/></Declaration>
@@ -97,6 +106,11 @@
     <Declaration><Class IRI="#NeedBreak"/></Declaration>
     <Declaration><Class IRI="#Tired"/></Declaration>
     <Declaration><Class IRI="#TooMuchNoise"/></Declaration>
+    <!-- PhysicalNeed subtypes -->
+    <Declaration><Class IRI="#Hungry"/></Declaration>
+    <Declaration><Class IRI="#Hurt"/></Declaration>
+    <Declaration><Class IRI="#NeedToilet"/></Declaration>
+    <Declaration><Class IRI="#Thirsty"/></Declaration>
     <!-- ValidationNeed subtypes -->
     <Declaration><Class IRI="#IFinish"/></Declaration>
     <Declaration><Class IRI="#IUnderstand"/></Declaration>
@@ -164,22 +178,32 @@
     <SubClassOf><Class IRI="#MathOperation"/><Class IRI="#MathematicalConcept"/></SubClassOf>
     <SubClassOf><Class IRI="#Number"/><Class IRI="#MathematicalConcept"/></SubClassOf>
     <SubClassOf><Class IRI="#Circle"/><Class IRI="#GeometricShape"/></SubClassOf>
+    <SubClassOf><Class IRI="#Hexagon"/><Class IRI="#GeometricShape"/></SubClassOf>
+    <SubClassOf><Class IRI="#Pentagon"/><Class IRI="#GeometricShape"/></SubClassOf>
+    <SubClassOf><Class IRI="#Rectangle"/><Class IRI="#GeometricShape"/></SubClassOf>
     <SubClassOf><Class IRI="#Square"/><Class IRI="#GeometricShape"/></SubClassOf>
     <SubClassOf><Class IRI="#Triangle"/><Class IRI="#GeometricShape"/></SubClassOf>
     <SubClassOf><Class IRI="#Bigger"/><Class IRI="#Magnitude"/></SubClassOf>
     <SubClassOf><Class IRI="#Equal"/><Class IRI="#Magnitude"/></SubClassOf>
     <SubClassOf><Class IRI="#Smaller"/><Class IRI="#Magnitude"/></SubClassOf>
     <SubClassOf><Class IRI="#Addition"/><Class IRI="#MathOperation"/></SubClassOf>
+    <SubClassOf><Class IRI="#Division"/><Class IRI="#MathOperation"/></SubClassOf>
+    <SubClassOf><Class IRI="#Multiplication"/><Class IRI="#MathOperation"/></SubClassOf>
     <SubClassOf><Class IRI="#Subtraction"/><Class IRI="#MathOperation"/></SubClassOf>
 
     <!-- Needs -->
     <SubClassOf><Class IRI="#HelpNeed"/><Class IRI="#Needs"/></SubClassOf>
     <SubClassOf><Class IRI="#MentalNeed"/><Class IRI="#Needs"/></SubClassOf>
+    <SubClassOf><Class IRI="#PhysicalNeed"/><Class IRI="#Needs"/></SubClassOf>
     <SubClassOf><Class IRI="#ValidationNeed"/><Class IRI="#Needs"/></SubClassOf>
     <SubClassOf><Class IRI="#DoNotUnderstand"/><Class IRI="#HelpNeed"/></SubClassOf>
     <SubClassOf><Class IRI="#NeedBreak"/><Class IRI="#MentalNeed"/></SubClassOf>
     <SubClassOf><Class IRI="#Tired"/><Class IRI="#MentalNeed"/></SubClassOf>
     <SubClassOf><Class IRI="#TooMuchNoise"/><Class IRI="#MentalNeed"/></SubClassOf>
+    <SubClassOf><Class IRI="#Hungry"/><Class IRI="#PhysicalNeed"/></SubClassOf>
+    <SubClassOf><Class IRI="#Hurt"/><Class IRI="#PhysicalNeed"/></SubClassOf>
+    <SubClassOf><Class IRI="#NeedToilet"/><Class IRI="#PhysicalNeed"/></SubClassOf>
+    <SubClassOf><Class IRI="#Thirsty"/><Class IRI="#PhysicalNeed"/></SubClassOf>
     <SubClassOf><Class IRI="#IFinish"/><Class IRI="#ValidationNeed"/></SubClassOf>
     <SubClassOf><Class IRI="#IUnderstand"/><Class IRI="#ValidationNeed"/></SubClassOf>
     <SubClassOf><Class IRI="#IsItGood"/><Class IRI="#ValidationNeed"/></SubClassOf>
@@ -254,6 +278,9 @@
     </DisjointClasses>
     <DisjointClasses>
         <Class IRI="#Circle"/>
+        <Class IRI="#Hexagon"/>
+        <Class IRI="#Pentagon"/>
+        <Class IRI="#Rectangle"/>
         <Class IRI="#Square"/>
         <Class IRI="#Triangle"/>
     </DisjointClasses>
@@ -264,6 +291,8 @@
     </DisjointClasses>
     <DisjointClasses>
         <Class IRI="#Addition"/>
+        <Class IRI="#Division"/>
+        <Class IRI="#Multiplication"/>
         <Class IRI="#Subtraction"/>
     </DisjointClasses>
 
@@ -271,7 +300,14 @@
     <DisjointClasses>
         <Class IRI="#HelpNeed"/>
         <Class IRI="#MentalNeed"/>
+        <Class IRI="#PhysicalNeed"/>
         <Class IRI="#ValidationNeed"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="#Hungry"/>
+        <Class IRI="#Hurt"/>
+        <Class IRI="#NeedToilet"/>
+        <Class IRI="#Thirsty"/>
     </DisjointClasses>
     <DisjointClasses>
         <Class IRI="#IFinish"/>
@@ -981,5 +1017,343 @@
             </ObjectPropertyAtom>
         </Head>
     </DLSafeRule>
+
+    <!-- Rule 8a: Draw + Rectangle => Ruler -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-rectangle-needs-ruler</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Rectangle"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Ruler"/><Variable IRI="urn:swrl:var#r"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#r"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 8b: Draw + Rectangle => Pencil -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-rectangle-needs-pencil</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Rectangle"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Pencil"/><Variable IRI="urn:swrl:var#p"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#p"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 9a: Draw + Pentagon => Ruler -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-pentagon-needs-ruler</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Pentagon"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Ruler"/><Variable IRI="urn:swrl:var#r"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#r"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 9b: Draw + Pentagon => Pencil -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-pentagon-needs-pencil</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Pentagon"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Pencil"/><Variable IRI="urn:swrl:var#p"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#p"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 10a: Draw + Hexagon => Ruler -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-hexagon-needs-ruler</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Hexagon"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Ruler"/><Variable IRI="urn:swrl:var#r"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#r"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 10b: Draw + Hexagon => Pencil -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-hexagon-needs-pencil</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Hexagon"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Pencil"/><Variable IRI="urn:swrl:var#p"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#p"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- =================================================================
+         FRENCH LABELS — new classes (Step 1+2, feature/child-communication)
+         ================================================================= -->
+
+    <!-- Needs: 7 existing classes now labelled -->
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#DoNotUnderstand</IRI>
+        <Literal xml:lang="fr">je ne comprends pas</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#DoNotUnderstand</IRI>
+        <Literal xml:lang="fr">comprendre</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#IUnderstand</IRI>
+        <Literal xml:lang="fr">j'ai compris</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#IUnderstand</IRI>
+        <Literal xml:lang="fr">compris</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#IFinish</IRI>
+        <Literal xml:lang="fr">j'ai fini</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#IFinish</IRI>
+        <Literal xml:lang="fr">fini</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#IFinish</IRI>
+        <Literal xml:lang="fr">terminé</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#IsItGood</IRI>
+        <Literal xml:lang="fr">c'est bien</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#IsItGood</IRI>
+        <Literal xml:lang="fr">correct</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Tired</IRI>
+        <Literal xml:lang="fr">fatigué</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Tired</IRI>
+        <Literal xml:lang="fr">fatigue</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#NeedBreak</IRI>
+        <Literal xml:lang="fr">pause</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#NeedBreak</IRI>
+        <Literal xml:lang="fr">se reposer</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#TooMuchNoise</IRI>
+        <Literal xml:lang="fr">trop de bruit</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#TooMuchNoise</IRI>
+        <Literal xml:lang="fr">bruit</Literal>
+    </AnnotationAssertion>
+
+    <!-- Needs: 4 new PhysicalNeed classes -->
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Hungry</IRI>
+        <Literal xml:lang="fr">j'ai faim</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Thirsty</IRI>
+        <Literal xml:lang="fr">j'ai soif</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#NeedToilet</IRI>
+        <Literal xml:lang="fr">toilettes</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Hurt</IRI>
+        <Literal xml:lang="fr">j'ai mal</Literal>
+    </AnnotationAssertion>
+
+    <!-- Geometric shapes: 3 new -->
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Rectangle</IRI>
+        <Literal xml:lang="fr">rectangle</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Pentagon</IRI>
+        <Literal xml:lang="fr">pentagone</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Hexagon</IRI>
+        <Literal xml:lang="fr">hexagone</Literal>
+    </AnnotationAssertion>
+
+    <!-- Math operations: 2 new -->
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Multiplication</IRI>
+        <Literal xml:lang="fr">multiplication</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty abbreviatedIRI="rdfs:label"/>
+        <IRI>#Division</IRI>
+        <Literal xml:lang="fr">division</Literal>
+    </AnnotationAssertion>
+
+    <!-- =================================================================
+         ARASAAC IDs — new classes
+         ================================================================= -->
+
+    <!-- Needs: 7 existing -->
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#DoNotUnderstand</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">11697</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#IUnderstand</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">37827</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#IFinish</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">5358</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#IsItGood</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">5397</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Tired</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">35537</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#NeedBreak</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">27339</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#TooMuchNoise</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">7157</Literal>
+    </AnnotationAssertion>
+
+    <!-- Needs: 4 new PhysicalNeed -->
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Hungry</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">35559</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Thirsty</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">7273</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#NeedToilet</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">5921</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Hurt</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">30620</Literal>
+    </AnnotationAssertion>
+
+    <!-- Shapes: 3 new -->
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Rectangle</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">4731</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Pentagon</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">4715</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Hexagon</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">4663</Literal>
+    </AnnotationAssertion>
+
+    <!-- Operations: 2 new -->
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Multiplication</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">5798</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="#arasaacId"/>
+        <IRI>#Division</IRI>
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">5707</Literal>
+    </AnnotationAssertion>
 
 </Ontology>
