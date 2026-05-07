@@ -3,71 +3,57 @@
 Date: 2026-05-07  
 Branch: feature/owl-integration
 
+## Final Status: PASSED (after JAR patch)
+
 ## Environment
 
 | Component | Value |
 |-----------|-------|
-| Java installed | 1.8.0_461 (Java 8, 32-bit) |
-| Java path | `C:\Program Files (x86)\Common Files\Oracle\Java\java8path\java.exe` |
-| owlready2 version | 0.50 |
-| Python version | 3.13 |
+| Java (after upgrade) | OpenJDK 21.0.11 Temurin LTS |
+| owlready2 version | 0.50 (patched) |
+| Python version | 3.10.11 |
 
-## Test
+## Root Cause
 
-Script: `scripts/test_pellet.py`  
-Ontology: minimal in-memory ontology with 2 classes and SWRL rule `A(?x) -> B(?x)`
+owlready2 0.50 bundles `jena-arq-fixed2.10.0.jar`, which contains three
+`LangRDFXML` classes compiled with Java 25 (class file version 69).
+Java 21 supports only up to class file version 65.
 
-## Result: FAILED
+The rest of the JAR (≈ 500 other classes) is compiled for Java 6 — only
+three classes are the problem:
 
-### Error
+- `org/apache/jena/riot/lang/LangRDFXML.class` (was: 69, now: 50)
+- `org/apache/jena/riot/lang/LangRDFXML$HandlerSink.class` (was: 69, now: 50)
+- `org/apache/jena/riot/lang/LangRDFXML$ErrorHandlerBridge.class` (was: 69, now: 50)
 
+## Fix Applied
+
+Replaced the three Java-25 classes with their originals from the official
+Apache Jena 2.10.0 release (`jena-arq-2.10.0.jar` from Maven Central).
+The originals are compiled for Java 6 (class version 50) — fully compatible
+with Java 21 (which supports up to class version 65).
+
+Backup of the original owlready2 JAR is at:
+`jena-arq-fixed2.10.0.jar.bak_java25` in the owlready2 pellet directory.
+
+Apply the fix on a new machine:
 ```
-java.lang.UnsupportedClassVersionError: org/apache/jena/riot/lang/LangRDFXML
-has been compiled by a more recent version of the Java Runtime
-(class file version 69.0), this version of the Java Runtime only
-recognizes class file versions up to 52.0
-```
-
-### Root cause
-
-owlready2 v0.50 bundles "fixed" Jena JARs (`jena-arq-fixed2.10.0.jar`,
-`jena-core-fixed2.10.0.jar`) that were recompiled by the owlready2 maintainers
-with a modern Java compiler (producing class file version 69 = Java 25).
-
-Java 8 (class file version 52) cannot load class files compiled for Java 25.
-The incompatibility is in the Jena loader, which Pellet uses to parse the
-N-Triples input file.
-
-## HermiT status: WORKING
-
-`sync_reasoner_hermit()` uses a different JAR set that is Java 8 compatible.
-HermiT confirmed functional with the same Java installation.
-
-**Limitation:** HermiT does not execute SWRL rules. If we use HermiT,
-SWRL `DLSafeRule` axioms in the OWL file are silently ignored.
-
-## Fix options
-
-| Option | What | Impact |
-|--------|------|--------|
-| **A — Upgrade Java (recommended)** | Install Java 21 LTS (OpenJDK) or Java 25, update JAVA_HOME + PATH | Pellet works → SWRL (Opzione B) confirmed |
-| B — Downgrade owlready2 | `pip install owlready2==0.45` or earlier; older versions shipped Jena 8-compatible JARs | Risk: API changes in owlready2 |
-| C — Switch to Opzione A | Use HermiT + OWL `SubClassOf (requiresTool some …)` restrictions | Gives up SWRL verb+object semantics |
-| D — Python-native SWRL | Match lemmas manually in Python without a reasoner | Requires explicit user approval |
-
-## Recommendation
-
-**Install Java 21 LTS** (OpenJDK — free, cross-platform).  
-Download: `https://adoptium.net/` (Adoptium/Eclipse Temurin builds)
-
-After install:
-```
-java -version  # should report 21.x
+python scripts/patch_owlready2_jars.py
 ```
 
-Then re-run:
+## Smoke Test Output
+
 ```
-python scripts/test_pellet.py
+Java detected: openjdk version "21.0.11" 2026-04-21 LTS
+Individual type before reasoning: [A]
+Running sync_reasoner_pellet ...
+Individual type after reasoning: [A, B]
+SMOKE TEST PASSED: SWRL rule fired correctly.
 ```
 
-Expected output: `SMOKE TEST PASSED`.
+## Notes for Teammates
+
+1. Install Java 21 LTS from https://adoptium.net/temurin/releases/?version=21
+2. Ensure `java -version` shows 21.x
+3. Run `python scripts/patch_owlready2_jars.py` once per machine
+4. Run `python scripts/test_pellet.py` to confirm
