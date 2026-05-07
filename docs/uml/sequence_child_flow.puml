@@ -1,56 +1,34 @@
 @startuml sequence_child_flow
-title Flow 2 — Child selects "J'ai faim"\nNo server required
+title Flow 2 — Student selects a need pictogram\nNo backend server required
 
 skinparam sequenceMessageAlign center
 skinparam responseMessageBelowArrow true
 
-actor       "Student\n(Élève)"        as S
-participant "HomeScreen\n(Flutter)"    as Home
-participant "ChildScreen\n(Flutter)"   as Child
-boundary    "ARASAAC CDN\n(static.arasaac.org)" as CDN
+actor       "Student"       as S
+participant "Home Screen"   as Home
+participant "Communication\nBoard" as Board
+boundary    "Image CDN"     as CDN
 
-== Phase A — Screen opening ==
+== Opening the board ==
 
-S -> Home : tap "Je suis l'élève"
-activate Home
-Home -> Child : Navigator.push(ChildScreen)
-activate Child
+S -> Home : taps "Je suis l'élève"
+Home -> Board : navigate to communication board
 
-note over Child
-  ChildScreen is stateless.
-  No HTTP call needed — data is hardcoded
-  from maths.owl arasaacId annotations.
-  (11 NeedItems in _kPhysical, _kMental,
-   _kHelpValidation constants)
-end note
+Board -> Board : build categorised grid\nfrom built-in pictogram list
 
-Child -> Child : build() → renders 3 sections\n(_kPhysical, _kMental, _kHelpValidation)
-
-loop for each NeedItem in all sections
-  Child -> CDN : Image.network(\n  "https://static.arasaac.org/pictograms/{id}/{id}_500.png"\n)
-  activate CDN
-  CDN --> Child : PNG image bytes
-  deactivate CDN
+loop for each pictogram
+  Board -> CDN : request image
+  CDN --> Board : image
 end
 
-Child --> S : grid of 11 pictograms\n(3 sections: J'ai besoin / Je me sens / Pour le travail)
-deactivate Home
+Board --> S : grid displayed\n(physical needs / feelings / school)
 
-== Phase B — Pictogram selection ==
+== Selecting a pictogram ==
 
-S -> Child : tap card "J'ai faim" (arasaacId=35559)
-Child -> Child : _showPictogramDialog(context, item)
+S -> Board : taps a pictogram cell
+Board -> Board : show full-screen dialog\nwith enlarged image and label
 
-Child -> CDN : Image.network same URL
-activate CDN
-CDN --> Child : PNG
-deactivate CDN
-
-Child --> S : full-screen dialog:\n[large image] + "J'ai faim" + Fermer button
-
-S -> Child : tap "Fermer"
-Child -> Child : Navigator.of(context).pop()
-Child --> S : grid restored
-deactivate Child
+S -> Board : taps "Fermer"
+Board --> S : returns to grid
 
 @enduml

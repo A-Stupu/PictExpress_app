@@ -1,82 +1,47 @@
 @startuml sequence_teacher_flow
-title Flow 1 — "Tracez un cercle"\nTeacher speaks → Pictograms displayed
+title Flow 1 — Teacher speaks an instruction\nSystem returns relevant pictograms
 
 skinparam sequenceMessageAlign center
 skinparam responseMessageBelowArrow true
 
-actor       "Teacher"           as T
-participant "TeacherScreen\n(Flutter)"     as UI
-boundary    "HTTP\n(localhost:8000)"        as HTTP
-participant "FastAPIApp\n(serveur_api.py)" as API
-participant "Whisper\n(openai-whisper)"    as Whisper
-participant "spaCy\n(fr_core_news_md)"    as NLP
-participant "OntologyService"             as OWL
-participant "Pellet\n(via owlready2)"     as Pellet
+actor       "Teacher"        as T
+participant "Mobile App"     as App
+participant "Backend"        as API
+participant "Speech-to-Text" as STT
+participant "NLP"            as NLP
+participant "Ontology\nService" as OWL
+participant "Reasoner"       as Pellet
 
-T -> UI : tap microphone button
-activate UI
-UI -> UI : _toggleRecording()\nAudioRecorder.start()
-UI --> T : recording indicator (red)
+T -> App : taps microphone
+App -> App : start recording
 
-T -> UI : tap to stop
-UI -> UI : AudioRecorder.stop()\n→ path = "enregistrement.wav"
+T -> App : taps to stop
+App -> API : send audio file
 
-UI -> HTTP : POST /api/transcrire\n[multipart: file=<wav>]
-activate HTTP
-HTTP -> API : request
-activate API
+API -> STT : transcribe (French)
+STT --> API : transcribed sentence
 
-API -> API : save to NamedTemporaryFile\n→ tmp_path
+API -> NLP : lemmatise sentence
+NLP --> API : list of relevant lemmas
 
-API -> Whisper : asyncio.to_thread(\n  transcribe, tmp_path, language="fr"\n)
-activate Whisper
-note right of Whisper
-  Runs in thread pool
-  (CPU-bound, ~2-5s)
-end note
-Whisper --> API : {"text": "Tracez un cercle"}
-deactivate Whisper
-
-API -> NLP : nlp("Tracez un cercle")
-activate NLP
-NLP --> API : lemmas = ["tracer", "cercle"]\n(stop words filtered)
-deactivate NLP
-
-API -> OWL : infer_pictograms(["tracer", "cercle"])
+API -> OWL : infer pictograms from lemmas
 activate OWL
 
-OWL -> OWL : find_class_by_label("tracer") → Draw\nfind_class_by_label("cercle") → Circle
+OWL -> OWL : map lemmas to OWL classes\n(action + concept)
+OWL -> OWL : create temporary individuals\nand link them
 
-OWL -> OWL : <<create>> drawInst : Draw\n<<create>> circleInst : Circle\ndrawInst.hasTarget = [circleInst]
-
-OWL -> Pellet : sync_reasoner_pellet([onto],\n  infer_property_values=True)
+OWL -> Pellet : run SWRL reasoning
 activate Pellet
-note right of Pellet
-  Fires SWRL rules:
-  draw-circle-needs-compass → drawInst requires theCompass
-  draw-circle-needs-pencil  → drawInst requires thePencil
-end note
-Pellet --> OWL : inferences applied
+Pellet --> OWL : inferred tool requirements
 deactivate Pellet
 
-OWL -> OWL : collect drawInst.requires\n→ [theCompass, thePencil]
-OWL -> OWL : get_arasaac_id for Circle, Compass, Pencil
-OWL -> OWL : <<destroy>> drawInst, circleInst
-
-OWL --> API : [\n  {class_name:"Circle",  label_fr:"cercle", arasaac_id:4603},\n  {class_name:"Compass", label_fr:"compas", arasaac_id:34065},\n  {class_name:"Pencil",  label_fr:"crayon", arasaac_id:2440}\n]
+OWL -> OWL : collect results\nclean up temporary individuals
+OWL --> API : pictogram list\n(concept + inferred tools)
 deactivate OWL
 
-API -> API : build pictogrammes = ["4603.png","34065.png","2440.png"]
-API -> API : os.remove(tmp_path)
+API --> App : pictogram identifiers
 
-API --> HTTP : 200 OK\n{texte_compris, pictogrammes, details}
-deactivate API
-HTTP --> UI : response JSON
-deactivate HTTP
-
-UI -> UI : setState → _pictogrammes = ["4603.png",...]
-UI -> UI : Image.network("http://127.0.0.1:8000/pictogrammes/4603.png") × 3
-UI --> T : 3 pictograms displayed\n(cercle, compas, crayon)
-deactivate UI
+App -> App : load and display pictogram images
+App --> T : pictograms shown on screen
 
 @enduml
