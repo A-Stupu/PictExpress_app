@@ -1,0 +1,56 @@
+@startuml sequence_child_flow
+title Flow 2 — Child selects "J'ai faim"\nNo server required
+
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor       "Student\n(Élève)"        as S
+participant "HomeScreen\n(Flutter)"    as Home
+participant "ChildScreen\n(Flutter)"   as Child
+boundary    "ARASAAC CDN\n(static.arasaac.org)" as CDN
+
+== Phase A — Screen opening ==
+
+S -> Home : tap "Je suis l'élève"
+activate Home
+Home -> Child : Navigator.push(ChildScreen)
+activate Child
+
+note over Child
+  ChildScreen is stateless.
+  No HTTP call needed — data is hardcoded
+  from maths.owl arasaacId annotations.
+  (11 NeedItems in _kPhysical, _kMental,
+   _kHelpValidation constants)
+end note
+
+Child -> Child : build() → renders 3 sections\n(_kPhysical, _kMental, _kHelpValidation)
+
+loop for each NeedItem in all sections
+  Child -> CDN : Image.network(\n  "https://static.arasaac.org/pictograms/{id}/{id}_500.png"\n)
+  activate CDN
+  CDN --> Child : PNG image bytes
+  deactivate CDN
+end
+
+Child --> S : grid of 11 pictograms\n(3 sections: J'ai besoin / Je me sens / Pour le travail)
+deactivate Home
+
+== Phase B — Pictogram selection ==
+
+S -> Child : tap card "J'ai faim" (arasaacId=35559)
+Child -> Child : _showPictogramDialog(context, item)
+
+Child -> CDN : Image.network same URL
+activate CDN
+CDN --> Child : PNG
+deactivate CDN
+
+Child --> S : full-screen dialog:\n[large image] + "J'ai faim" + Fermer button
+
+S -> Child : tap "Fermer"
+Child -> Child : Navigator.of(context).pop()
+Child --> S : grid restored
+deactivate Child
+
+@enduml
