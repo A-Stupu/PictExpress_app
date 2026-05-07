@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import asyncio
 import whisper
 import spacy
 import tempfile
@@ -50,8 +51,10 @@ async def transcrire_audio(file: UploadFile = File(...)):
 
     try:
         # 1. Écoute (Whisper)
+        # DESIGN: transcribe is CPU-bound; run in a thread pool so the event loop
+        # is not blocked and other requests can be handled concurrently.
         print("🤖 Whisper écoute...")
-        resultat = modele_whisper.transcribe(temp_path, language="fr")
+        resultat = await asyncio.to_thread(modele_whisper.transcribe, temp_path, language="fr")
         texte_entendu = resultat["text"].strip()
         print(f"🗣️ Phrase entendue : '{texte_entendu}'")
 

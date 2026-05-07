@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+openai-whisper
+spacy
+owlready2
+python-multipart
+httpx
+requests

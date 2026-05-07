@@ -3,6 +3,13 @@ import 'package:record/record.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+// DESIGN: SERVER_URL is set at build time with --dart-define=SERVER_URL=http://192.168.x.x:8000
+// Default keeps localhost for dev; set to LAN IP for device testing.
+const String _serverUrl = String.fromEnvironment(
+  'SERVER_URL',
+  defaultValue: 'http://127.0.0.1:8000',
+);
+
 void main() {
   runApp(const PictExpressApp());
 }
@@ -69,7 +76,7 @@ class _MainScreenState extends State<MainScreen> {
   // Fonction magique qui envoie l'audio à Python
   Future<void> _envoyerAudioAuServeur(String audioPath) async {
     // L'adresse locale de votre ordinateur
-    var uri = Uri.parse('http://127.0.0.1:8000/api/transcrire');
+    var uri = Uri.parse('$_serverUrl/api/transcrire');
 
     var request = http.MultipartRequest('POST', uri);
     request.files.add(await http.MultipartFile.fromPath('file', audioPath));
@@ -159,7 +166,7 @@ class _MainScreenState extends State<MainScreen> {
                               ),
                               child: Image.network(
                                 // On va chercher l'image sur notre serveur Python !
-                                'http://127.0.0.1:8000/pictogrammes/$nomFichier',
+                                '$_serverUrl/pictogrammes/$nomFichier',
                                 width:
                                     120, // Taille de l'image (plus lisible pour l'enfant)
                                 height: 120,
