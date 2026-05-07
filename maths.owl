@@ -722,4 +722,264 @@
         <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#integer">38378</Literal>
     </AnnotationAssertion>
 
+    <!-- =================================================================
+         STEP 5 — NEW OBJECT PROPERTIES FOR SWRL RULES
+         ================================================================= -->
+
+    <!-- DESIGN: hasTarget links an Action instance to the MathematicalConcept
+         it acts upon (e.g. a Draw action targeting a Circle).  Domain is
+         Actions (covers both MathAction and ManualAction).  Range is
+         MathematicalConcept (covers GeometricShape, Number, MathOperation). -->
+    <Declaration><ObjectProperty IRI="#hasTarget"/></Declaration>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#hasTarget"/>
+        <Class IRI="#Actions"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#hasTarget"/>
+        <Class IRI="#MathematicalConcept"/>
+    </ObjectPropertyRange>
+
+    <!-- DESIGN: requires is populated entirely by Pellet via SWRL inference.
+         It links an Action to the SchoolMaterial needed to perform it.
+         Domain: Actions.  Range: SchoolMaterial (covers BasicTool, GeometryTool,
+         CalculationTool). The Python OntologyService reads this property after
+         reasoning to collect the suggested pictograms. -->
+    <Declaration><ObjectProperty IRI="#requires"/></Declaration>
+    <ObjectPropertyDomain>
+        <ObjectProperty IRI="#requires"/>
+        <Class IRI="#Actions"/>
+    </ObjectPropertyDomain>
+    <ObjectPropertyRange>
+        <ObjectProperty IRI="#requires"/>
+        <Class IRI="#SchoolMaterial"/>
+    </ObjectPropertyRange>
+
+    <!-- =================================================================
+         TOOL SINGLETON INDIVIDUALS
+         DESIGN: SWRL DL-Safe rules only fire on named individuals.  Each
+         tool class has exactly one canonical individual declared here.
+         At runtime OntologyService creates temporary action/shape instances,
+         runs Pellet, and reads the 'requires' property to find which singleton
+         tools the reasoner linked to the action.
+         ================================================================= -->
+
+    <Declaration><NamedIndividual IRI="#theCompass"/></Declaration>
+    <Declaration><NamedIndividual IRI="#thePencil"/></Declaration>
+    <Declaration><NamedIndividual IRI="#theRuler"/></Declaration>
+    <Declaration><NamedIndividual IRI="#theSetSquare"/></Declaration>
+    <Declaration><NamedIndividual IRI="#theCalculator"/></Declaration>
+    <Declaration><NamedIndividual IRI="#theNotebook"/></Declaration>
+    <Declaration><NamedIndividual IRI="#theEraser"/></Declaration>
+
+    <ClassAssertion><Class IRI="#Compass"/><NamedIndividual IRI="#theCompass"/></ClassAssertion>
+    <ClassAssertion><Class IRI="#Pencil"/><NamedIndividual IRI="#thePencil"/></ClassAssertion>
+    <ClassAssertion><Class IRI="#Ruler"/><NamedIndividual IRI="#theRuler"/></ClassAssertion>
+    <ClassAssertion><Class IRI="#SetSquare"/><NamedIndividual IRI="#theSetSquare"/></ClassAssertion>
+    <ClassAssertion><Class IRI="#Calculator"/><NamedIndividual IRI="#theCalculator"/></ClassAssertion>
+    <ClassAssertion><Class IRI="#Notebook"/><NamedIndividual IRI="#theNotebook"/></ClassAssertion>
+    <ClassAssertion><Class IRI="#Eraser"/><NamedIndividual IRI="#theEraser"/></ClassAssertion>
+
+    <!-- =================================================================
+         SWRL DL-SAFE RULES
+         Each rule body contains the action class, the hasTarget assertion,
+         the shape/concept class, AND the tool class — so the rule fires
+         only when all four ingredients are present as named individuals.
+         This is the key difference from OWL restrictions: without the verb
+         (Draw/Write/Erase/...) in the input, no tool is inferred.
+         ================================================================= -->
+
+    <!-- Rule 1a: Draw + Circle => Compass -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-circle-needs-compass</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Circle"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Compass"/><Variable IRI="urn:swrl:var#c"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#c"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 1b: Draw + Circle => Pencil -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-circle-needs-pencil</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Circle"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Pencil"/><Variable IRI="urn:swrl:var#p"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#p"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 2a: Draw + Square => Ruler -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-square-needs-ruler</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Square"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Ruler"/><Variable IRI="urn:swrl:var#r"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#r"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 2b: Draw + Square => Pencil -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-square-needs-pencil</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Square"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Pencil"/><Variable IRI="urn:swrl:var#p"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#p"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 3a: Draw + Triangle => SetSquare -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-triangle-needs-setsquare</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Triangle"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#SetSquare"/><Variable IRI="urn:swrl:var#q"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#q"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 3b: Draw + Triangle => Pencil -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>draw-triangle-needs-pencil</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Draw"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#Triangle"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Pencil"/><Variable IRI="urn:swrl:var#p"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#p"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 4: Measure + GeometricShape => Ruler -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>measure-shape-needs-ruler</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Measure"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ObjectPropertyAtom><ObjectProperty IRI="#hasTarget"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#s"/>
+            </ObjectPropertyAtom>
+            <ClassAtom><Class IRI="#GeometricShape"/><Variable IRI="urn:swrl:var#s"/></ClassAtom>
+            <ClassAtom><Class IRI="#Ruler"/><Variable IRI="urn:swrl:var#r"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#r"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 5: Calculate => Calculator -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>calculate-needs-calculator</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Calculate"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ClassAtom><Class IRI="#Calculator"/><Variable IRI="urn:swrl:var#c"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#c"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 6a: Write => Pencil -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>write-needs-pencil</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Write"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ClassAtom><Class IRI="#Pencil"/><Variable IRI="urn:swrl:var#p"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#p"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 6b: Write => Notebook -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>write-needs-notebook</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Write"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ClassAtom><Class IRI="#Notebook"/><Variable IRI="urn:swrl:var#n"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#n"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
+    <!-- Rule 7: Erase => Eraser -->
+    <DLSafeRule>
+        <Annotation><AnnotationProperty abbreviatedIRI="rdfs:label"/>
+            <Literal>erase-needs-eraser</Literal></Annotation>
+        <Body>
+            <ClassAtom><Class IRI="#Erase"/><Variable IRI="urn:swrl:var#a"/></ClassAtom>
+            <ClassAtom><Class IRI="#Eraser"/><Variable IRI="urn:swrl:var#e"/></ClassAtom>
+        </Body>
+        <Head>
+            <ObjectPropertyAtom><ObjectProperty IRI="#requires"/>
+                <Variable IRI="urn:swrl:var#a"/><Variable IRI="urn:swrl:var#e"/>
+            </ObjectPropertyAtom>
+        </Head>
+    </DLSafeRule>
+
 </Ontology>

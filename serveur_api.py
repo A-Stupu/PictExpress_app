@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -7,7 +8,31 @@ import spacy
 import tempfile
 import os
 
-app = FastAPI()
+from ontology_service import OntologyService
+
+
+# ---- Lifespan: load heavy models once at startup ----------------------------
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # DESIGN: OntologyService.load() starts the JVM via Pellet; doing it once
+    # at startup avoids per-request JVM cold-start overhead (~2-4 s).
+    print("⏳ Chargement des modèles IA...")
+    app.state.whisper = whisper.load_model("small")
+    app.state.nlp     = spacy.load("fr_core_news_md")
+
+    print("⏳ Chargement de l'ontologie + Pellet...")
+    svc = OntologyService("./maths.owl")
+    svc.load()
+    app.state.ontology = svc
+    print("✅ Tous les modèles sont prêts.")
+    yield
+    # cleanup (Pellet JVM is managed by owlready2 internally)
+
+
+# ---- App setup ---------------------------------------------------------------
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,59 +42,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-os.makedirs("pictogrammes", exist_ok=True) 
+os.makedirs("pictogrammes", exist_ok=True)
 app.mount("/pictogrammes", StaticFiles(directory="pictogrammes"), name="pictogrammes")
 
-print("⏳ Chargement des modèles IA...")
-modele_whisper = whisper.load_model("small")
-nlp = spacy.load("fr_core_news_md")
 
-def interroger_ontologie(mots_clefs):
-    base_pictogrammes = {
-        "cahier": "cahier.png", 
-        "manger": "manger.png", 
-        "silence": "silence.png", 
-        "feuille": "feuille.png",
-        "prendre": "prenez.png",
-        "aller": "aller.png"
-    }
-    
-    pictos_trouves = []
-    for mot in mots_clefs:
-        if mot in base_pictogrammes:
-            pictos_trouves.append(base_pictogrammes[mot])
-            
-    return pictos_trouves
+# ---- API endpoint ------------------------------------------------------------
 
 @app.post("/api/transcrire")
 async def transcrire_audio(file: UploadFile = File(...)):
     print(f"📥 Fichier audio reçu : {file.filename}")
-    
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-        temp_audio.write(await file.read())
-        temp_path = temp_audio.name
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
 
     try:
-        # 1. Écoute (Whisper)
-        # DESIGN: transcribe is CPU-bound; run in a thread pool so the event loop
-        # is not blocked and other requests can be handled concurrently.
+        # 1. Transcription (CPU-bound — run in thread pool to avoid blocking event loop)
         print("🤖 Whisper écoute...")
-        resultat = await asyncio.to_thread(modele_whisper.transcribe, temp_path, language="fr")
+        resultat = await asyncio.to_thread(
+            app.state.whisper.transcribe, tmp_path, language="fr"
+        )
         texte_entendu = resultat["text"].strip()
-        print(f"🗣️ Phrase entendue : '{texte_entendu}'")
+        print(f"🗣️  Phrase entendue : '{texte_entendu}'")
 
-        # 2. Nettoyage et Grammaire (spaCy)
-        doc = nlp(texte_entendu)
-        mots_clefs = [token.lemma_ for token in doc if not token.is_stop and not token.is_punct]
+        # 2. Lemmatisation (spaCy)
+        doc = app.state.nlp(texte_entendu)
+        lemmes = [
+            token.lemma_ for token in doc if not token.is_stop and not token.is_punct
+        ]
+        print(f"🧠 Lemmes : {lemmes}")
 
-        # 3. Réflexion : On confie les mots au module indépendant
-        # Si le module change plus tard, cette ligne, elle, ne changera jamais !
-        pictos_a_afficher = interroger_ontologie(mots_clefs)
+        # 3. Inférence sémantique (Pellet via OntologyService)
+        pictos = app.state.ontology.infer_pictograms(lemmes)
+        print(f"🖼️  Pictogrammes inférés : {pictos}")
 
-        # 4. Réponse envoyée à Flutter
+        # 4. Build response: filenames use arasaac_id to match the renamed PNGs
+        pictogrammes_files = [f"{p['arasaac_id']}.png" for p in pictos]
+
         return {
             "texte_compris": texte_entendu,
-            "pictogrammes": pictos_a_afficher
+            "pictogrammes":  pictogrammes_files,
+            "details":       pictos,          # includes class_name, label_fr, arasaac_id
         }
+
     finally:
-        os.remove(temp_path)
+        os.remove(tmp_path)
