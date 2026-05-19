@@ -40,17 +40,35 @@ All IDs can be verified at `https://arasaac.org/pictograms/{id}`.
 | Teacher | professeur | 6556 | HIGH | Teacher |
 | Assistant | assistant | 38378 | MED | Classroom assistant; verify this is the school-context image |
 
+## Needs Mapping (added in feature/child-communication)
+
+IDs retrieved 2026-05-07 via the same ARASAAC API endpoint.
+
+**Note on label swap:** After the initial mapping, the display labels for `DoNotUnderstand` (11697) and `IUnderstand` (37827) were swapped in `child_screen.dart` to match the actual ARASAAC images. The IDs below are correct; the class names reflect the OWL hierarchy.
+
+| OWL Class | French Label (display) | ARASAAC ID | Confidence | Notes |
+|-----------|----------------------|-----------|------------|-------|
+| DoNotUnderstand | "Je ne comprends pas" | 11697 | MED | Keyword: "comprendre" |
+| IUnderstand | "J'ai compris" | 37827 | MED | Keyword: "compris" (past form) |
+| IFinish | "J'ai fini" | 5358 | HIGH | |
+| IsItGood | "C'est bien ?" | 5397 | MED | "bien" is polysemous; verify at arasaac.org/5397 |
+| Tired | "Fatigué" | 35537 | HIGH | |
+| NeedBreak | "Pause" | 27339 | HIGH | |
+| TooMuchNoise | "Trop de bruit" | 7157 | HIGH | |
+| Hungry | "J'ai faim" | 35559 | HIGH | |
+| Thirsty | "J'ai soif" | 7273 | HIGH | |
+| NeedToilet | "Toilettes" | 5921 | HIGH | |
+| Hurt | "J'ai mal" | 30620 | MED | "mal" is ambiguous; verify at arasaac.org/30620 |
+
 ## Classes Without arasaacId (not in primary pipeline)
 
 These classes exist in the ontology but have no pictogram ID because they are
-not directly surfaced to students (they are abstract categories or cognitive
-concepts not shown as individual pictograms):
+abstract categories not directly surfaced to users:
 
 `Actions`, `MathAction`, `ManualAction`, `MathematicalConcept`, `GeometricShape`,
 `GeometryTool`, `BasicTool`, `CalculationTool`, `SchoolMaterial`, `CalculationMethod`,
-`Magnitude`, `MathOperation`, `Needs`, `HelpNeed`, `MentalNeed`, `ValidationNeed`,
-`Person`, `Bigger`, `Equal`, `Smaller`, `Hands`, `Mind`, `DoNotUnderstand`,
-`NeedBreak`, `Tired`, `TooMuchNoise`, `IFinish`, `IUnderstand`, `IsItGood`
+`Magnitude`, `MathOperation`, `Needs`, `PhysicalNeed`, `HelpNeed`, `MentalNeed`,
+`ValidationNeed`, `Person`, `Bigger`, `Equal`, `Smaller`, `Hands`, `Mind`
 
 ## How to Add New Classes
 

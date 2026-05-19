@@ -1,8 +1,7 @@
 # OWL Integration Report
 
 Branch: `feature/owl-integration`  
-Date: 2026-05-07  
-Author: Claude Sonnet 4.6 (pair-programming session with Andrei Stupu)
+Date: 2026-05-07
 
 ---
 

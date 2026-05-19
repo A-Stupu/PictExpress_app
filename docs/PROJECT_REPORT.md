@@ -320,7 +320,7 @@ Logging uses `print()` throughout. There is no structured log output suitable fo
 
 The class diagram shows `ApiService` as a planned abstraction in the presentation layer. This class does not currently exist — HTTP calls are inline in `TeacherScreen`. It is documented as a planned refactoring.
 
-The sequence diagram for Flow 2 shows the communication board receiving data from the backend at startup. In the current implementation, the data is hardcoded and there is no such call. The diagram represents the intended architecture.
+The sequence diagram for Flow 2 reflects the current implementation: pictogram images are loaded from the ARASAAC CDN directly, and the need items are built from hardcoded constants with no backend call.
 
 ### Construction Phase Priorities
 

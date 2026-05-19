@@ -7,23 +7,24 @@ A research application that automatically translates French sentences into picto
 
 ---
 
-## Current Status (branch: feature/owl-integration)
+## Current Status
 
-The prototype backend is **functionally connected end-to-end** for the minimum use case:
-> "Tracez un cercle" → [circle pictogram, compass pictogram, pencil pictogram]
+The prototype is **functionally connected end-to-end** for both flows. Elaboration phase is closing.
 
 | Component | Status |
 |-----------|--------|
-| `maths.owl` OWL ontology | Structurally fixed + 23 French labels + 23 arasaacId + 11 SWRL rules |
+| `maths.owl` OWL ontology | 62 classes, 34 French labels, 34 arasaacIds, 17 SWRL rules |
 | Pellet reasoner (Java 21) | Working — SWRL rules fire correctly |
-| `ontology_service.py` | OntologyService: label lookup + SWRL inference via Pellet |
+| `ontology_service.py` | OntologyService: label lookup, SWRL inference via Pellet, needs grouping |
 | `serveur_api.py` | FastAPI backend: Whisper (async) + spaCy + OntologyService |
-| Flutter app | Microphone permissions added (Android + iOS), URL parametrized |
-| Tests | 17/17 pytest passing |
+| Flutter app | Two flows: Teacher (speech → pictograms) + Student (communication board) |
+| Tests | 30/30 pytest passing |
 
-**What works:** Whisper transcribes French speech → spaCy lemmatizes → OntologyService maps lemmas to OWL classes → Pellet infers required tools via SWRL → pictograms returned by arasaacId.
+**Flow 1 (Teacher):** Whisper transcribes French speech → spaCy lemmatises → OntologyService maps lemmas to OWL classes → Pellet infers required tools via SWRL → pictograms served as static files.
 
-**What is not yet implemented:** live ARASAAC CDN download (pictogram PNG files must be pre-loaded locally); ARASAAC API client; NLP disambiguation for polysemy; Flutter state management; full test coverage for the Flutter UI.
+**Flow 2 (Student):** Communication board with categorised need pictograms loaded directly from the ARASAAC CDN — no backend required.
+
+**Not yet implemented:** live CDN download for the teacher flow (pictogram PNG files are pre-loaded locally); NLP disambiguation for polysemy; Flutter state management beyond `setState`; Flutter widget and integration tests.
 
 ---
 
@@ -89,7 +90,7 @@ flutter run --dart-define=SERVER_URL=http://192.168.1.X:8000
      └─ [OntologyService — ontology_service.py]
             │  load: OWL/XML parse + Pellet JVM startup
             │  infer: temporary OWL individuals → sync_reasoner_pellet
-            ├─ [maths.owl]                   52 classes, 11 SWRL rules, 23 arasaacIds
+            ├─ [maths.owl]                   62 classes, 17 SWRL rules, 34 arasaacIds
             └─ [Pellet via owlready2]        SWRL DL-Safe rule execution
                      │
                      ▼
@@ -129,27 +130,39 @@ The application operates within a **restricted domain**: elementary school daily
 ## Project Structure
 
 ```
-PictExpress_app/
+Pictograme_app/
 ├── README.md                                    <- This file
+├── maths.owl                                    <- OWL 2 ontology (62 classes, 17 SWRL rules)
+├── ontology_service.py                          <- OntologyService: label index, Pellet inference
+├── serveur_api.py                               <- FastAPI server: Whisper, spaCy, OntologyService
+├── requirements.txt
+├── pictogrammes/                                <- Static pictogram PNG files (arasaacId.png)
 ├── docs/
-│   ├── ONTOLOGY_DEVELOPMENT_GUIDE.md           <- Step-by-step guide (this phase)
-│   ├── uml/
-│   │   ├── README.md                            <- UML artifacts guide
-│   │   ├── use_case_diagram.puml                - COMPLETED
-│   │   └── domain_model.puml                    - COMPLETED
-│   ├── domain/
-│   │   ├── README.md
-│   │   └── domain_glossary.md                   <- 50–80 concepts (in progress)
-│   ├── ontology/
-│   │   ├── README.md
-│   │   ├── ARCHITECTURE.md                      <- OWL design decisions (in progress)
-│   │   ├── pict-express-v0.1.owl                <- Schema (skeleton)
-│   │   ├── pict-express-v0.6.owl                <- Final ontology (target)
-│   │   └── examples/
-│   │       └── sample_instances.owl             <- Usage examples
-│   └── ontology-setup/
-│       ├── OWL_PRIMER.md                        <- OWL cheat sheet (in progress)
-│       └── PROTEGE_SETUP.md                     <- Protégé setup guide
+│   ├── PROJECT_REPORT.md                        <- Elaboration phase report
+│   ├── ONTOLOGY_DEVELOPMENT_GUIDE.md            <- Original ontology planning guide
+│   ├── ONTOLOGY_INTEGRATION.md                  <- OWL structure, SWRL rules, extension guide
+│   └── uml/
+│       ├── README.md                            <- UML artifacts guide
+│       ├── use_case_diagram.puml
+│       ├── domain_model.puml
+│       ├── class_diagram.puml
+│       ├── sequence_teacher_flow.puml
+│       └── sequence_child_flow.puml
+├── analysis/                                    <- Phase working documents
+│   ├── arasaac_mapping.md
+│   ├── integration_report.md
+│   ├── child_flow_report.md
+│   ├── owl_baseline.md
+│   ├── pellet_smoke_test.md
+│   └── pictogram_renaming.md
+├── scripts/
+│   ├── patch_owlready2_jars.py                  <- Fix owlready2 JAR for Java 21
+│   ├── populate_arasaac_ids.py                  <- Fetch ARASAAC IDs into maths.owl
+│   └── test_pellet.py                           <- Pellet smoke test
+├── tests/
+│   ├── test_pipeline.py                         <- 17 inference tests
+│   └── test_needs.py                            <- 13 needs tests
+└── pictexpress_app/                             <- Flutter mobile application
 ```
 
 ---
@@ -164,19 +177,15 @@ The project follows the **Unified Process (UP)** with team co-ownership across f
 - Domain Model (8 conceptual classes and relationships)
 - Project charter and scope definition
 
-### Initiation: Ontology — IN PROGRESS
-**Deliverables**:
-- Domain glossary (50–80 concepts with French synonyms and OWL class names)
-- OWL ontology structure (Phase 1–5: setup, core concepts, properties, rules, validation)
-- SWRL reasoning rules for semantic disambiguation
-- Integration guide for downstream teams
-
-### Elaboration — PENDING
-**Deliverables**:
-- System Sequence Diagrams (SSD) for key use cases
-- Design Contracts (preconditions, postconditions, invariants)
-- Logical Architecture (detailed layer interactions)
-- NLP ↔ Ontology mapping specifications
+### Elaboration — CLOSING
+**Deliverables produced**:
+- OWL ontology (`maths.owl`): 62 classes, 34 French labels, 17 SWRL rules, full Pellet integration
+- Use Case Diagram (updated to implemented scope)
+- Class Diagram (four-layer architecture)
+- Sequence Diagrams for Flow 1 (teacher) and Flow 2 (student)
+- Domain Model
+- Functional prototype: both flows end-to-end
+- 30 automated tests, all passing
 
 ### Construction — PENDING
 **Deliverables**:
@@ -213,61 +222,19 @@ The project follows the **Unified Process (UP)** with team co-ownership across f
 
 ---
 
-## Completed Deliverables (Inception Phase)
+## Completed Deliverables
 
-###  UML Artifacts
-- **Use Case Diagram** ([docs/uml/use_case_diagram.puml](docs/uml/use_case_diagram.puml))
-  - School context scope
-  - 6 actors: Teacher, Support Teacher, Student, System Admin, Speech-to-Text Service, ARASAAC DB
-  - Core use case: "Convert Speech to Pictogram" with supporting flows
+### Inception Phase
+- **Use Case Diagram** ([docs/uml/use_case_diagram.puml](docs/uml/use_case_diagram.puml)) — school context scope, 4 actors
+- **Domain Model** ([docs/uml/domain_model.puml](docs/uml/domain_model.puml)) — conceptual classes and relationships
 
-- **Domain Model** ([docs/uml/domain_model.puml](docs/uml/domain_model.puml))
-  - 8 conceptual classes: User, SpeechConversion, SequenceEntry, SavedSequence, Pictogram, CustomPictogram, PictogramCategory, PictogramLibrary
-  - Relationships: initiates, produces, resolved to, saved as, shared with
-
-### Documentation
-- **Artifact Guide** ([docs/uml/README.md](docs/uml/README.md)) — Rendering instructions & artifact descriptions
-
----
-
-## In-Progress: Ontology Development (Current Phase)
-
-### Target Deliverable
-A complete **OWL ontology** encoding the school domain with:
-- ~50–80 core concepts organized hierarchically
-- Object properties for semantic relationships (performedBy, usesObject, locatedIn, etc.)
-- SWRL reasoning rules for disambiguation (e.g., resolve "maître" → Teacher in school context)
-- Full validation (zero inconsistencies, reasoner tests passed)
-
-### Key Foundation
-- **domain_glossary.md** — vocabulary bridge for all team members
-  - Concept | Category | French Synonyms | OWL Class Name
-  - Enables parallel work: Member 2 builds ontology, Member 3 maps pictograms
-  - Versioned together with ontology
-
-### Development Steps (See [ONTOLOGY_DEVELOPMENT_GUIDE.md](docs/ONTOLOGY_DEVELOPMENT_GUIDE.md))
-
-**Phase 1: Setup & Training**
-1. Install Protégé
-2. OWL fundamentals training
-3. Define ontology architecture (top-level classes, properties)
-
-**Phase 2: Iteration 1 — Core Concepts**
-4. Collect 50 domain concepts → draft domain_glossary.md
-5. Create OWL schema in Protégé (classes, properties)
-6. Populate with 50 individuals + validation
-7. Review checkpoint (feedback cycle)
-
-**Phase 3: Iteration 2 — Properties & Rules**
-8. Add relational properties (performedBy, locatedIn, usesObject, etc.)
-9. Add disjointness axioms and cardinality constraints
-10. Write 5–10 SWRL rules for semantic disambiguation
-11. Test with reasoner (HermiT) — ensure consistency
-
-**Phase 4: Documentation & Handoff**
-12. Export final ontology
-13. Create README + examples + SPARQL queries
-14. Brief Member 1 (arch implications) and Member 3 (pictogram mapping)
+### Elaboration Phase
+- **Class Diagram** ([docs/uml/class_diagram.puml](docs/uml/class_diagram.puml)) — four-layer architecture
+- **Sequence Diagram — Teacher Flow** ([docs/uml/sequence_teacher_flow.puml](docs/uml/sequence_teacher_flow.puml))
+- **Sequence Diagram — Student Flow** ([docs/uml/sequence_child_flow.puml](docs/uml/sequence_child_flow.puml))
+- **OWL Ontology** (`maths.owl`) — 62 classes, 17 SWRL rules, full Pellet integration
+- **Functional prototype** — both flows end-to-end, 30/30 tests passing
+- **Project Report** ([docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md))
 
 ---
 

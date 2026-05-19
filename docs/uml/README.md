@@ -1,6 +1,6 @@
-# UML Artifacts — Pictograme App (School Context)
+# UML Artifacts — Pict'Express
 
-Foundational UML artifacts produced during the **Inception phase** of the Unified Process (UP).
+UML artifacts produced across the **Inception** and **Elaboration** phases of the Unified Process (UP).
 
 ---
 
@@ -95,9 +95,31 @@ User
 
 ---
 
-## Next Artifacts (Elaboration Phase)
+## 3. Class Diagram
 
-- **System Sequence Diagrams (SSD)** — one per main scenario (e.g., Convert Speech to Pictogram)
-- **Contracts** — pre/post-conditions for system operations
-- **Logical Architecture** — layer diagram (UI, Application, Domain, Infrastructure)
-- **Design Class Diagram (DCD)** — refined from the domain model with GRASP/GoF patterns
+**File:** `class_diagram.puml`
+
+Four-layer architecture (Presentation, Application, Domain, Infrastructure) as implemented in the Elaboration phase prototype. Shows Flutter screens, FastAPI server, `OntologyService`, and the OWL ontology class hierarchy.
+
+---
+
+## 4. Sequence Diagram — Teacher Flow
+
+**File:** `sequence_teacher_flow.puml`
+
+Flow 1: teacher speaks a French instruction → audio sent to backend → Whisper transcription → spaCy lemmatisation → OntologyService SWRL inference → pictograms returned and displayed.
+
+---
+
+## 5. Sequence Diagram — Student Flow
+
+**File:** `sequence_child_flow.puml`
+
+Flow 2: student opens the communication board → categorised need pictograms loaded from ARASAAC CDN → tap shows full-screen dialog. No backend server involved.
+
+---
+
+## Next Artifacts (Construction Phase)
+
+- **Updated Class Diagram** — with `ApiService` extracted from `TeacherScreen`, Riverpod state management
+- **Widget Test Specifications** — pre/post-conditions for Flutter UI components

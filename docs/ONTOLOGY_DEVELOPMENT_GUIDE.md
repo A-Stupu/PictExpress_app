@@ -1,8 +1,10 @@
 # OWL Ontology Development Guide for Pict'Express
 
+> **Status:** This document is the original planning guide written during the Inception phase. The Elaboration phase narrowed the scope to an elementary mathematics and daily routine domain. The ontology that was actually built (`maths.owl`) uses the class hierarchy documented in [ONTOLOGY_INTEGRATION.md](ONTOLOGY_INTEGRATION.md), which differs from the general school structure described below. Consult ONTOLOGY_INTEGRATION.md for the current structure and extension instructions.
+
 ## Overview
 
-This guide provides a step-by-step process to develop the OWL ontology for the Pict'Express system. The ontology is the semantic backbone of the Domain Layer and encodes the school domain (50–80 concepts) to support Named Entity Recognition (NER) and reasoning-based disambiguation.
+This guide describes the original step-by-step process planned to develop the OWL ontology for the Pict'Express system. The ontology is the semantic backbone of the Domain Layer and encodes the school domain to support Named Entity Recognition (NER) and reasoning-based disambiguation.
 
 ---
 

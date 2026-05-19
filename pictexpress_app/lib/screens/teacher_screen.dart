@@ -157,7 +157,7 @@ class _TeacherScreenState extends State<TeacherScreen> {
 class HelpScreen extends StatelessWidget {
   const HelpScreen({Key? key}) : super(key: key);
 
-  Widget _buildNeedButton(BuildContext context, String text, String emoji, Color bgColor) {
+  Widget _buildNeedButton(BuildContext context, String text, IconData icon, Color bgColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0),
       child: SizedBox(
@@ -173,7 +173,7 @@ class HelpScreen extends StatelessWidget {
               .showSnackBar(SnackBar(content: Text('Demande : $text'))),
           child: Row(
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 50)),
+              Icon(icon, size: 44),
               const SizedBox(width: 20),
               Expanded(
                 child: Text(text,
@@ -199,9 +199,9 @@ class HelpScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildNeedButton(context, 'Répéter', '🔁', Colors.lightBlue.shade100),
-              _buildNeedButton(context, 'Faire une pause', '⏸️', Colors.orange.shade100),
-              _buildNeedButton(context, 'Je me sens mal', '🤕', Colors.red.shade100),
+              _buildNeedButton(context, 'Répéter', Icons.replay, Colors.lightBlue.shade100),
+              _buildNeedButton(context, 'Faire une pause', Icons.pause_circle_outline, Colors.orange.shade100),
+              _buildNeedButton(context, 'Je me sens mal', Icons.sentiment_dissatisfied, Colors.red.shade100),
             ],
           ),
         ),

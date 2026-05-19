@@ -15,7 +15,11 @@ owl:Thing
 ├── Actions                  (MathAction, ManualAction)
 ├── CalculationMethod        (Hands, Mind)
 ├── MathematicalConcept      (GeometricShape, MathOperation, Magnitude, Number)
-├── Needs                    (HelpNeed, MentalNeed, ValidationNeed)
+├── Needs
+│   ├── PhysicalNeed         (Hungry, Thirsty, NeedToilet, Hurt)
+│   ├── MentalNeed           (Tired, NeedBreak, TooMuchNoise)
+│   ├── HelpNeed             (DoNotUnderstand)
+│   └── ValidationNeed       (IFinish, IUnderstand, IsItGood)
 ├── Person                   (Student, Teacher, Assistant)
 └── SchoolMaterial           (BasicTool, CalculationTool, GeometryTool)
 ```
@@ -48,7 +52,7 @@ All six top-level categories are declared mutually disjoint.
 
 ## 2. SWRL rules
 
-Eleven `DLSafeRule` axioms are declared in `maths.owl`. They are **read by `OntologyService`** at load time and converted to `owlready2 Imp` objects (owlready2 does not parse `DLSafeRule` from OWL/XML directly — see the `_parse_swrl_rules()` method).
+Seventeen `DLSafeRule` axioms are declared in `maths.owl`. They are **read by `OntologyService`** at load time and converted to `owlready2 Imp` objects (owlready2 does not parse `DLSafeRule` from OWL/XML directly — see the `_parse_swrl_rules()` method).
 
 | Rule label | Body | Head |
 |------------|------|------|
@@ -58,6 +62,12 @@ Eleven `DLSafeRule` axioms are declared in `maths.owl`. They are **read by `Onto
 | draw-square-needs-pencil | Draw(?a), hasTarget(?a,?s), Square(?s), Pencil(?p) | requires(?a,?p) |
 | draw-triangle-needs-setsquare | Draw(?a), hasTarget(?a,?s), Triangle(?s), SetSquare(?q) | requires(?a,?q) |
 | draw-triangle-needs-pencil | Draw(?a), hasTarget(?a,?s), Triangle(?s), Pencil(?p) | requires(?a,?p) |
+| draw-rectangle-needs-ruler | Draw(?a), hasTarget(?a,?s), Rectangle(?s), Ruler(?r) | requires(?a,?r) |
+| draw-rectangle-needs-pencil | Draw(?a), hasTarget(?a,?s), Rectangle(?s), Pencil(?p) | requires(?a,?p) |
+| draw-pentagon-needs-ruler | Draw(?a), hasTarget(?a,?s), Pentagon(?s), Ruler(?r) | requires(?a,?r) |
+| draw-pentagon-needs-pencil | Draw(?a), hasTarget(?a,?s), Pentagon(?s), Pencil(?p) | requires(?a,?p) |
+| draw-hexagon-needs-ruler | Draw(?a), hasTarget(?a,?s), Hexagon(?s), Ruler(?r) | requires(?a,?r) |
+| draw-hexagon-needs-pencil | Draw(?a), hasTarget(?a,?s), Hexagon(?s), Pencil(?p) | requires(?a,?p) |
 | measure-shape-needs-ruler | Measure(?a), hasTarget(?a,?s), GeometricShape(?s), Ruler(?r) | requires(?a,?r) |
 | calculate-needs-calculator | Calculate(?a), Calculator(?c) | requires(?a,?c) |
 | write-needs-pencil | Write(?a), Pencil(?p) | requires(?a,?p) |
